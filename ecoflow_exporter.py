@@ -215,7 +215,7 @@ class EcoflowMetric:
         # According to best practices for naming metrics and labels, the voltage should be in volts and the current in amperes
         # WARNING! This will ruin all Prometheus historical data and backward compatibility of Grafana dashboard
         # value = value / 1000 if value.endswith("_vol") or value.endswith("_amp") else value
-        log.debug(f"Set {self.name} = {value}")
+        log.debug(f"Set {self.name} = {value}. {self.additional_labels}")
         self.metric.labels(device=self.device_name, **self.additional_labels).set(value)
 
     def clear(self):
