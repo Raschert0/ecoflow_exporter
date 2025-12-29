@@ -304,7 +304,7 @@ class Worker:
             self.store_metric(payload_metric_key, payload_metric_value, additional_labels)
         elif isinstance(payload_metric_value, str):
             additional_labels["str_label"] = payload_metric_value
-            self.store_metric(payload_metric_key, 1, additional_labels)
+            self.store_metric(f"{payload_metric_key}_str", 1, additional_labels)
         else:
             log.warning(f"Skipping unsupported metric {payload_metric_key}: {payload_metric_value} ({additional_labels}) (unknown type: {type(payload_metric_value)})")
 
