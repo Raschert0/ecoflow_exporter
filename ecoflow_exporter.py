@@ -192,9 +192,9 @@ class EcoflowMetric:
     def __init__(self, ecoflow_payload_key, device_name, additional_labels = None):
         self.ecoflow_payload_key = ecoflow_payload_key
         self.device_name = device_name
-        self.additional_labels = additional_labels or {}
+        self.additional_labels_keys = list((additional_labels or {}).keys())
         self.name = f"ecoflow_{self.convert_ecoflow_key_to_prometheus_name()}"
-        self.metric = Gauge(self.name, f"value from MQTT object key {ecoflow_payload_key}", labelnames=["device"] + list(self.additional_labels.keys()))
+        self.metric = Gauge(self.name, f"value from MQTT object key {ecoflow_payload_key}", labelnames=["device"] + self.additional_labels_keys)
 
     def convert_ecoflow_key_to_prometheus_name(self):
         # bms_bmsStatus.maxCellTemp -> bms_bms_status_max_cell_temp
@@ -211,12 +211,14 @@ class EcoflowMetric:
             raise EcoflowMetricException(f"Cannot convert payload key {self.ecoflow_payload_key} to comply with the Prometheus data model. Please, raise an issue!")
         return new
 
-    def set(self, value):
+    def set(self, value, additional_labels = None):
         # According to best practices for naming metrics and labels, the voltage should be in volts and the current in amperes
         # WARNING! This will ruin all Prometheus historical data and backward compatibility of Grafana dashboard
         # value = value / 1000 if value.endswith("_vol") or value.endswith("_amp") else value
-        log.debug(f"Set {self.name} = {value}. {self.additional_labels}")
-        self.metric.labels(device=self.device_name, **self.additional_labels).set(value)
+        if additional_labels is None:
+            additional_labels = {}
+        log.debug(f"Set {self.name} = {value}. {additional_labels}")
+        self.metric.labels(device=self.device_name, **additional_labels).set(value)
 
     def clear(self):
         log.debug(f"Clear {self.name}")
@@ -317,7 +319,7 @@ class Worker:
             log.info(f"Created new metric from payload key {metric.ecoflow_payload_key} -> {metric.name}")
             self.metrics_collector.append(metric)
 
-        metric.set(payload_metric_value)
+        metric.set(payload_metric_value, additional_labels)
 
         if payload_metric_key == 'inv.acInVol' and payload_metric_value == 0:
             ac_in_current = self.get_metric_by_ecoflow_payload_key('inv.acInAmp')
